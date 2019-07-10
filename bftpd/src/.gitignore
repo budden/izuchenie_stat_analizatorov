@@ -1,0 +1,4 @@
+*.o
+bftpd
+config.cache
+mksources.finished

@@ -210,18 +210,26 @@ void command_user(char *username)
 		control_printf(SL_FAILURE, "503 Username already given.");
 		return;
 	}
+        bftpd_log("command_user: I'm still alive. Username = «%s»\n", username);
 	mystrncpy(user, username, sizeof(user) - 1);
+        bftpd_log("Survived mystrncpy\n");
         userinfo_set = 1; /* Dirty! */
 	alias = (char *) config_getoption("ALIAS");
+        bftpd_log("Survived config_getoption(ALIAS) = «%s»\n", alias);
         userinfo_set = 0;
 	if (alias[0] != '\0')
 		mystrncpy(user, alias, sizeof(user) - 1);
+        bftpd_log("about to call init_userinfo\n");
         init_userinfo();
+        bftpd_log("perezhil init_userinfo\n");
         userinfo_set = 1;    /* just in case we missed it */
+	bftpd_log("Trying to log in as %s.\n", user);
 #ifdef DEBUG
 	bftpd_log("Trying to log in as %s.\n", user);
 #endif
+        bftpd_log("command_user: I'm still alive 2\n");
         expand_groups();
+        bftpd_log("command_user: expanded groups and alive\n");
 	if (!strcasecmp(config_getoption("ANONYMOUS_USER"), "yes"))
         {
                 state = STATE_USER;
@@ -371,6 +379,7 @@ void command_pasv(char *foo)
             sa.sin_port = htons(port);
             if (bind(pasvsock, (struct sockaddr *) &sa, sizeof(sa)) == 0) {
                 success = 1;
+                bftpd_log("Passive mode: Successfully bound port %d\n", port);
 #ifdef DEBUG
                 bftpd_log("Passive mode: Successfully bound port %d\n", port);
 #endif

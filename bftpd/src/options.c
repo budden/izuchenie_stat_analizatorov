@@ -12,8 +12,8 @@
 #include "logging.h"
 
 struct global config_global;
-struct group_of_users *config_groups;
-struct user *config_users;
+struct group_of_users *config_groups /*budden>*/= NULL/*<budden*/;
+struct user *config_users /*budden>*/= NULL/*<budden*/;
 
 /*
 Returns NULL on error. May return
@@ -50,8 +50,11 @@ char *config_read_line(FILE *configfile)
            if (second_quote)
               second_quote[1] = '\0';
            /* there is just one quote, return error */
-           else
-             str[0] = '\0';
+           else //budden str[0] = '\0';
+	    { // budden
+                control_printf(SL_FAILURE, "Incorrect syntax in config file - only one quote: %s\n", str);
+                exit(1);
+           }
         }
 	s = str;
 	while ((s[0] == ' ') || (s[0] == '\t'))
@@ -70,7 +73,7 @@ void create_options(FILE *configfile, struct bftpd_option **options, struct dire
            return;
 
 	while (!strchr(str, '}')) {
-  		if (str[0] != '\n') {
+  		if ((str[0] != '\n')/*budden<*/&&(str[0] != '\0')/*>budden*/) {
             if ((strstr(str, "directory")) && (strchr(str, '{')) && (directories)) {
                 char *tmp;
                 if (dir) {
@@ -101,11 +104,13 @@ void create_options(FILE *configfile, struct bftpd_option **options, struct dire
                         /* bail out on memory error */
                         if (! opt)
                            return;
+                        /* budden - changed malloc to calloc */
 
-       			opt->name = (char *) malloc( strlen(str) + 2 );
+       			opt->name = (char *) calloc( strlen(str) + 2, sizeof(char) );
        			/* opt->value = (char *) malloc(strlen(str)); */
-                        opt->value = (char *) malloc( strlen(str) + 256);
-       			sscanf(str, "%[^=]=\"%[^\n\"]", opt->name, opt->value);
+               /* budden - changed malloc to calloc */
+                opt->value = (char *) calloc( strlen(str) + 256, sizeof(char));
+        	sscanf(str, "%[^=]=\"%[^\n\"]\"", opt->name, opt->value);
             }
    		}
 		str = config_read_line(configfile);
@@ -124,23 +129,43 @@ void expand_groups()
     struct list_of_struct_group *endg = NULL;
     uid_t uid;
     int i;
+    char *tm;
+    bftpd_log("entered expand_groups()\n");
     if ((grp = config_groups)) {
         do {
+            // budden>
+            tm = malloc(strlen(grp->temp_members)+2);
+            if (!tm) { // out of memory
+                exit(1);
+            }
+            strcpy(tm,grp->temp_members);
+            free(grp->temp_members);
+            grp->temp_members = tm;
+            // <budden
             strcat(grp->temp_members, ",");
             while (strchr(grp->temp_members, ',')) {
                 sscanf(grp->temp_members, "%[^,]", foo);
                 cutto(grp->temp_members, strlen(foo) + 1);
                 if (foo[0] == '@') {
                     if (sscanf(foo + 1, "%i", &uid)) {
+                      	bftpd_log("about to getgrgid\n");
                         if (!((grpinfo = getgrgid(uid))))
                             continue;
                     } else
                         if (!((grpinfo = getgrnam(foo + 1))))
                             continue;
-                    if (grp->groups)
-                        endg = endg->next = malloc(sizeof(struct list_of_struct_group));
-                    else
-                        grp->groups = endg = malloc(sizeof(struct list_of_struct_group));
+                    bftpd_log("found a group «%s» somehow\n", foo+1);
+                    if (grp->groups) {
+                        bftpd_log("Bef added another group w/o sanitizer issues");
+                        // budden replaced malloc with calloc
+                        endg = endg->next = calloc(1, sizeof(struct list_of_struct_group));
+                        bftpd_log("Aft added another group w/o sanitizer issues");
+                    } else {
+                        // budden replaced malloc with calloc
+                        bftpd_log("Bef added a group w/o sanitizer issues");
+                        grp->groups = endg = calloc(1, sizeof(struct list_of_struct_group));
+                        bftpd_log("Aft added a group w/o sanitizer issues");
+                    }
                     if (! endg) return;  /* bail out on erro */
 
                     endg->grp.gr_name = strdup(grpinfo->gr_name);
@@ -172,6 +197,7 @@ void expand_groups()
                 endp->pwd.pw_gecos = strdup(temp->pw_gecos);
                 endp->pwd.pw_dir = strdup(temp->pw_dir);
                 endp->pwd.pw_shell = strdup(temp->pw_shell);
+                /*budden>*/endp->next = NULL;/*<budden*/
             }
             free(grp->temp_members);
         } while ((grp = grp->next));
@@ -232,9 +258,11 @@ void config_init()
                 create_options(configfile, &(usr->options), &(usr->directories));
             } else if (strstr(str, "group ") == str) {
                 if (grp) {
-                    grp = grp->next = malloc(sizeof(struct group_of_users));
+                    // budden replaced malloc with calloc, because groups is uninitialized    
+                    grp = grp->next = calloc(1, sizeof(struct group_of_users));
                 } else {
-                    config_groups = grp = malloc(sizeof(struct group_of_users));
+                    // budden replaced malloc with calloc, because groups is uninitialized    
+                    config_groups = grp = calloc(1, sizeof(struct group_of_users));
                 }
                 if (! grp)
                 {
@@ -350,6 +378,7 @@ char *getoption_user(char *name)
 {
     char *result;
     struct user *usr;
+    //bftpd_log("Entered getoption_user(%s)\n",name);
     if ((usr = config_users)) {
         do {
             if (!strcmp(user, usr->name)) {
@@ -366,6 +395,7 @@ char *getoption_user(char *name)
 char *getoption_global(char *name)
 {
     char *result;
+    //bftpd_log("Entered getoption_global(%s)\n",name);
     if ((result = getoption_directories(config_global.directories, name)))
         return result;
     if (config_global.options) {
@@ -381,16 +411,25 @@ char *config_getoption(char *name)
 {
     static char empty = 0;
     char *foo;
+    bftpd_log("Entered config_getoption(%s)\n",name);
     if (userinfo_set) {
-        if ((foo = getoption_user(name)))
+        if ((foo = getoption_user(name))) {
+            bftpd_log("getoption_user returned «%s»\n",foo);
             return foo;
-        if ((foo = getoption_group(name)))
+        }
+        if ((foo = getoption_group(name))) {
+            bftpd_log("getoption_group returned «%s»\n",foo);
             return foo;
+        }
     }
-    if ((foo = getoption_global(name)))
+    if ((foo = getoption_global(name))) {
+        bftpd_log("getoption_global returned «%s»\n",foo);
         return foo;
-    else
+    }
+    else {
+        bftpd_log("returning &empty\n");
         return &empty;
+    }
 }
 
 void config_end()

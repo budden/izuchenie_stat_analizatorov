@@ -429,6 +429,7 @@ int main(int argc, char **argv)
 			replace(str, "%h", (char *) inet_ntoa(name.sin_addr), MAX_STRING_LENGTH);
 	}
 	replace(str, "%i", (char *) inet_ntoa(name.sin_addr), MAX_STRING_LENGTH);
+	bftpd_log("DADA1\n");
 	control_printf(SL_SUCCESS, "220 %s", str);
 
         /* We might not get any data, so let's set an alarm before the
@@ -443,6 +444,7 @@ int main(int argc, char **argv)
                 if (string_length < 0) string_length = 0;
                 str[string_length] = 0;
                 bftpd_statuslog(2, 0, "%s", str);
+		bftpd_log("Processing command: %s\n", str);
 #ifdef DEBUG
 		bftpd_log("Processing command: %s\n", str);
 #endif

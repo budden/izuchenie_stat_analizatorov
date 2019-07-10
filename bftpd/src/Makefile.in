@@ -2,7 +2,7 @@ VERSION=5.1
 CC?=@CC@
 INSTALL=@INSTALL@
 prefix=@prefix@
-CFLAGS=@CFLAGS@ @DEFS@ -Wall -I. -DVERSION=\"$(VERSION)\" -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -DPREFIX=\"$(prefix)\" @DEBUG@
+CFLAGS=@CFLAGS@ @DEFS@ -g -O0 -fsanitize=address -Wall -I. -DVERSION=\"$(VERSION)\" -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -DPREFIX=\"$(prefix)\" @DEBUG@
 LIBS=@LIBS@
 mandir=@mandir@
 sbindir=@sbindir@
@@ -15,7 +15,7 @@ OBJS=bftpdutmp.o commands.o commands_admin.o cwd.o dirlist.o list.o login.o logg
 SRCS=bftpdutmp.c commands.c commands_admin.c cwd.c dirlist.c list.c login.c logging.c main.c mystring.c options.c md5.c
 
 OBJS2LINK=$(OBJS) $(PAX)
-LDFLAGS=
+LDFLAGS=-fsanitize=address
 
 all: bftpd
 

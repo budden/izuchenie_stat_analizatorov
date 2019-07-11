@@ -15,3 +15,6 @@ g++ -Wall leontqev1.cpp \
  test4_c/test4.c \
  test6_c/test6.c \
  -o leontqev1.o
+cd ../bftpd/src
+make clean
+make

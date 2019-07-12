@@ -155,7 +155,7 @@ void expand_groups()
                         if (!((grpinfo = getgrnam(foo + 1))))
                             continue;
                     bftpd_log("found a group «%s» somehow\n", foo+1);
-                    if (grp->groups) {
+                    if (grp && grp->groups) {
                         bftpd_log("Bef added another group w/o sanitizer issues");
                         // budden replaced malloc with calloc
                         endg = endg->next = calloc(1, sizeof(struct list_of_struct_group));

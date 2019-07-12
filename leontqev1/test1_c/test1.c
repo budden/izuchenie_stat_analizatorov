@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "../leontqev1.h"
 
 void test_free(void *p) { free(p); }
@@ -53,6 +54,10 @@ void test_path_sensitiv_wwith_errors() {
   free_mem_by_pts(x, 0, 5); // Oshibka dvojjnogo osvobozhdenija pamjati
 }
 
+#define SIMPLE_MACRO(x) "a" # x
+#define COMPLEX_MACRO(x,y) SIMPLE_MACRO(x) # y
+
+
 void mem_multiple_free_c() {
   test_path_sensitiv_no_exceptions(); // Kod ne vyzyvajushhijj padenija
 
@@ -61,4 +66,7 @@ void mem_multiple_free_c() {
 
   test_path_sensitiv_wwith_errors(); // Oshibka dlja vyjavlenija analizom,
                                     // chuvstvitelqnym k putjam vypolnenija
+  printf(COMPLEX_MACRO("aaa","bbb"));
 }
+
+
